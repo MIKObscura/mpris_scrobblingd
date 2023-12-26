@@ -39,6 +39,7 @@ main = do
     currentBusVar <- newTVarIO ""
     let currentBus = getBusName cfg.bus activeBusList
     print currentBus
+    -- if a bus was found when the program is launched, hook to it
     unless (currentBus == "") $ do
         currentBusUname <- getUniqueBusName currentBus client
         print currentBusUname
@@ -59,11 +60,13 @@ main = do
         sigHandler <- addMatch client matchProps (\sig -> propsCallback sig cfg (busName_ currentBus) currentSession waitingThreadId mainThreadId)
         removeMatch client dummyHandler
         atomically $ writeTVar sigHandlerVar sigHandler
+    -- check every 5 seconds if the current bus is active, do nothing if so, try to hook to another one if not
     forever $ do
         currentBus <- readTVarIO currentBusVar
         isCurrentBusActive <- isAnyBusActive [currentBus]
         if not isCurrentBusActive then do
             session <- readTVarIO currentSession
+            -- register the session if not empty and empty it when done
             unless (Prelude.null session) $ do
                 writeSession session cfg.keepPreviousSessions cfg.homePath
                 writePeriodData session cfg
@@ -75,8 +78,9 @@ main = do
             busNamesList <- getNamesList client
             let foundActiveBus = getBusName cfg.bus busNamesList
             print foundActiveBus
+            atomically $ writeTVar currentBusVar foundActiveBus
+            -- if a new bus is found, hook to it, if not do nothing
             unless (foundActiveBus == "") $ do
-                atomically $ writeTVar currentBusVar foundActiveBus
                 newBusUname <- getUniqueBusName foundActiveBus client
                 print newBusUname
                 prevHandler <- readTVarIO sigHandlerVar

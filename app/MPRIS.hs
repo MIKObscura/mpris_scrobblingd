@@ -22,36 +22,43 @@ module MPRIS
     import Control.Concurrent.STM
     import qualified Control.Monad
 
+    -- returns True if any of the elements of the second list are in the first, False if not
     exists :: Eq a => [a] -> [a] -> Bool
     exists x y = or $ (==) <$> x <*> y
 
+    -- returns the list of all bus names currently used
     getNamesList :: Client -> IO [String]
     getNamesList client = do
         reply <- call_ client (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "ListNames") {methodCallDestination = Just "org.freedesktop.DBus"}
         let Just namesList = fromVariant (head (methodReturnBody reply)) :: Maybe [String]
         return namesList
 
+    -- returns True if any of the given bus is active
     isAnyBusActive :: [String] -> IO Bool
     isAnyBusActive busList = do
         client <- connectSession
         names <- getNamesList client
         return (exists busList names)
 
+    -- returns the first bus from the second list found in the first list
     getBusName :: [String] -> [String]-> String
     getBusName busList activeNames = let foundBus = [x | x <- activeNames, x `elem` busList]
                                     in case foundBus of
                                         [] -> ""
                                         _ -> head foundBus
 
+    -- query the given bus to get the Metadata
     queryBusProps :: Client -> BusName -> IO (Either MethodError Variant)
     queryBusProps client activeBus = do
         getProperty client (methodCall "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player" "Metadata") {methodCallDestination = Just activeBus}
 
+    -- extract the metadata from a method return
     getMetadata :: Either MethodError Variant -> Map String Variant
     getMetadata reply = let replyValue = head (snd (partitionEithers [reply]))
                             justValue = fromVariant replyValue :: Maybe (Map String Variant)
                         in fromJust justValue
 
+    -- convert metadata Map into a Scrobble
     convertMetadata :: Map String Variant -> Integer -> Scrobble
     convertMetadata metadata posixTime = Scrobble {
         timestamp = posixTime,
@@ -63,6 +70,7 @@ module MPRIS
         }
     }
 
+    -- callback hooked to PropertiesChanged signal
     propsCallback :: Signal -> Configuration -> BusName -> TVar [Scrobble] -> TVar ThreadId -> ThreadId -> IO ()
     propsCallback sig cfg currentBus currentSession thread mainThreadId = do
         currentTime <- getCurrentPOSIXTime
@@ -90,6 +98,8 @@ module MPRIS
                 disconnect tempClient
                 return ()
 
+    -- get the unique name of a given well-known name
+    -- see here for more info about that: 
     getUniqueBusName :: String -> Client -> IO String
     getUniqueBusName wellKnownName client = do
         reply <- call_ client (methodCall "/" "org.freedesktop.DBus" "GetNameOwner") {methodCallDestination = Just "org.freedesktop.DBus", methodCallBody = [toVariant wellKnownName]}

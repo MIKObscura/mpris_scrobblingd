@@ -10,10 +10,12 @@ where
     import Data.Maybe
     import ScrobbleTypes(Configuration(..))
 
+    -- extract the value from the config line
     getVal :: String -> [(String, String)] -> String
     getVal elem list =
         maybe "" snd (find (\ (x, _) -> x == elem) list)
 
+    -- read the config file and converts it to a Configuration value
     readConfig :: String -> IO Configuration
     readConfig filename = do
         file <- readFile filename
