@@ -1,3 +1,4 @@
+-- this module contains all the functions that interact with the JSON files
 module JsonOperations
 (
     getPeriodData,
@@ -19,11 +20,14 @@ module JsonOperations
     import Misc
     import qualified Data.Map
 
+    -- append the given artist name, album title, duration and timestamp (POSIX time) to the session
     addToSession :: [Scrobble] -> String -> String -> String -> Integer -> Integer -> [Scrobble]
     addToSession session artist album title duration timestamp = let newTrack = TrackInfo {artist = artist, album = album, title = title, duration = duration}
                                                                      scrobble = Scrobble {timestamp = timestamp, trackInfo = newTrack}
                                                                  in session ++ [scrobble]
 
+    -- write the session to a JSON file
+    -- if the program is configured to keep previous sessions, it will be written in a new file, otherwise the same file will be overwritten
     writeSession :: [Scrobble] -> Bool -> String -> IO ()
     writeSession session keepSession path = do
         currentTime <- getCurrentPOSIXTime
@@ -32,15 +36,19 @@ module JsonOperations
         else
             BS.writeFile (path ++ "scrobble_session.json") (encodePretty session)
 
+    -- get the weekly/monthly/yearly data from the corresponding JSON file
     getPeriodData :: String -> Configuration -> IO [Scrobble]
     getPeriodData period cfg = do
         scrobbleData <- B.readFile (homePath cfg ++ "scrobble_" ++ period ++ "ly_data.json")
         return (fromJust (decodeStrict scrobbleData :: Maybe [Scrobble]))
 
+    -- overwrite the stats file's content with the given Stat data
     writeStats :: Configuration -> Stats -> IO ()
     writeStats cfg stats = do
         BS.writeFile (homePath cfg ++ "stats.json") (encodePretty stats)
 
+    -- create a stats file with empty data
+    -- this is used for when said file doesn't exist yet
     createEmptyStatsFile :: Configuration -> IO ()
     createEmptyStatsFile cfg = do
         let emptyStats = Stats {
@@ -95,11 +103,14 @@ module JsonOperations
         }
         BS.writeFile (cfg.homePath ++ "stats.json") (encodePretty emptyStats)
 
+    -- get the stats from the corresponding JSON file
     getStats :: Configuration -> IO Stats
     getStats cfg = do
         file <- B.readFile (homePath cfg ++ "stats.json")
         return (fromJust (decodeStrict file :: Maybe Stats))
 
+    -- write the last session's data to the weekly/monthly/yearly JSON files
+    -- also removes all data that isn't within the time period
     writePeriodData :: [Scrobble] -> Configuration -> IO ()
     writePeriodData session cfg = do
         currentTime <- getCurrentPOSIXTime

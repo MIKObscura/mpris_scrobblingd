@@ -1,3 +1,4 @@
+-- this module contains the functions that interact with the Stats data
 module Stats
 (
     updatePeriodStats,

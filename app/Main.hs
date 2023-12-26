@@ -45,12 +45,14 @@ main = do
         print currentBusUname
         initialQuery <- queryBusProps client (busName_ currentBus)
         let currentMetadata = getMetadata initialQuery
+        -- start registering if the bus is playing something, do nothing and wait for signals if not
         unless (Data.Map.null currentMetadata) $ do
             forkIO $ do
                 newThreadId <- myThreadId
                 atomically $ writeTVar waitingThreadId newThreadId
                 currentTime <- getCurrentPOSIXTime
                 let scrobble = convertMetadata currentMetadata currentTime
+                print scrobble
                 let waitTime = getWaitingTime cfg.timeToRegister (fromInteger scrobble.trackInfo.duration)
                 threadDelay waitTime
                 atomically $ modifyTVar currentSession (++[scrobble])

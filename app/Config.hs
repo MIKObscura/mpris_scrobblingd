@@ -1,3 +1,4 @@
+-- this module handles the configuration of the program
 module Config
 (
     readConfig

@@ -1,3 +1,4 @@
+-- this module contains all the functions that interact with dbus
 module MPRIS
 (
     isAnyBusActive,
@@ -99,7 +100,7 @@ module MPRIS
                 return ()
 
     -- get the unique name of a given well-known name
-    -- see here for more info about that: 
+    -- see here for more info about that: https://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names
     getUniqueBusName :: String -> Client -> IO String
     getUniqueBusName wellKnownName client = do
         reply <- call_ client (methodCall "/" "org.freedesktop.DBus" "GetNameOwner") {methodCallDestination = Just "org.freedesktop.DBus", methodCallBody = [toVariant wellKnownName]}

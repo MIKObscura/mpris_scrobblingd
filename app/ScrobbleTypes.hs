@@ -1,3 +1,4 @@
+-- this module contains all of the data types used in this project
 module ScrobbleTypes
 (
     Configuration(..),

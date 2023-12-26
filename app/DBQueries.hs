@@ -1,3 +1,4 @@
+-- this module contains all the queries performed to the database
 module DBQueries
 (
     getTopAlbumsPlays,
@@ -12,6 +13,8 @@ module DBQueries
 where
     import ScrobbleTypes
     import Database.SQLite.Simple
+    -- get* functions just perform simple queries to the database
+    -- the result of these queries are used in the overall stats section of the stats file
     getTopArtistsPlays :: Connection -> IO [Artist]
     getTopArtistsPlays conn = query_ conn "select artists.id, artists.name, sum(tracks.plays) as total_plays, sum(tracks.plays * tracks.duration) \
                                             \ from artists join tracks on artists.id = tracks.artist \
@@ -52,6 +55,9 @@ where
                                         \ count(*), count(distinct artist), \
                                         \ count(distinct album) from tracks" :: IO [OverallStatsSection]
 
+    -- add a track to the database
+    -- it will first add the artist and album before doing so
+    -- triggers are important in this part as they prevent the addition of already existing data without
     addToDatabase :: Connection -> String -> String -> String -> Int -> IO ()
     addToDatabase conn newArtist newAlbum newTrack newDuration = do
         execute conn "insert into artists(name) values (?)" [newArtist]
