@@ -5,7 +5,7 @@ This program is in a very early stage, it will take some time before being actua
 I chose Haskell for this project for no particular reason, I was just learning the language when I got that idea so I went with it.
 
 # How to use
-Before using it, you must create a config file called "scrobbling_config.cfg" in `~/.config/mpris_scrobblingd` (see Configuration section for more details on that). Then in the the directory of your choice, you need to create a db file called `scrobble.db` and execute the sql script in it. This is necessary in order to initialize it. Then you also need to create an empty JSON file called `stats.json` and some JSON files with only "[]" as content called `scrobble_weekly_data.json`, `scrobble_monthly_data.json`, `scrobble_yearly_data.json` (I know this is kind of annoying, I'll work on making this not necessary).
+Before using it, you must create a config file called "scrobbling_config.cfg" in `~/.config/mpris_scrobblingd` (see Configuration section for more details on that). Then in the the directory of your choice, you need to create a db file called `scrobble.db` and execute the sql script in it. This is necessary in order to initialize it.
 
 To run it, you just need to use `cabal run` in the project's directory, for now this is not actually a daemon since it doesn't start at boot but it can work as one if you start it manually, I'll work on that later.
 

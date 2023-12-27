@@ -6,7 +6,8 @@ module JsonOperations
     getStats,
     writeSession,
     writePeriodData,
-    createEmptyStatsFile
+    createEmptyStatsFile,
+    createEmptyPeriodFile
 ) where
     import Data.Aeson
     import Data.Aeson.Encode.Pretty
@@ -46,6 +47,9 @@ module JsonOperations
     writeStats :: Configuration -> Stats -> IO ()
     writeStats cfg stats = do
         BS.writeFile (homePath cfg ++ "stats.json") (encodePretty stats)
+
+    createEmptyPeriodFile :: Configuration -> String -> IO ()
+    createEmptyPeriodFile cfg period = BS.writeFile (homePath cfg ++ "scrobble_" ++ period ++ "ly_data.json") "[]"
 
     -- create a stats file with empty data
     -- this is used for when said file doesn't exist yet

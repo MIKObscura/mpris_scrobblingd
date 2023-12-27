@@ -18,6 +18,7 @@ import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString as B
 import Data.Maybe (isNothing)
 import Data.Aeson (decodeStrict)
+import System.Directory ( doesFileExist )
 
 main :: IO ()
 main = do
@@ -25,9 +26,15 @@ main = do
     let cfgPath = envHome ++ "/.config/mpris_scrobblingd/scrobbler_config.cfg"
     cfg <- readConfig cfgPath
     print cfg
-    checkStats <- B.readFile (cfg.homePath ++ "stats.json")
-    Control.Monad.when(isNothing (decodeStrict checkStats :: Maybe Stats)) $ do
-        createEmptyStatsFile cfg
+    -- check if all these files exist and create them if not
+    checkStats <- doesFileExist (cfg.homePath ++ "stats.json")
+    checkWeek <- doesFileExist (cfg.homePath ++ "scrobble_weekly_data.json")
+    checkMonth <- doesFileExist (cfg.homePath ++ "scrobble_monthly_data.json")
+    checkYear <- doesFileExist (cfg.homePath ++ "scrobble_yearly_data.json")
+    unless checkStats $ createEmptyStatsFile cfg
+    unless checkWeek $ createEmptyPeriodFile cfg "week"
+    unless checkMonth $ createEmptyPeriodFile cfg "month"
+    unless checkYear $ createEmptyPeriodFile cfg "year"
     client <- connectSession
     activeBusList <- getNamesList client
     mainThreadId <- myThreadId
