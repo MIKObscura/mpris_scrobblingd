@@ -21,12 +21,6 @@ module JsonOperations
     import Misc
     import qualified Data.Map
 
-    -- append the given artist name, album title, duration and timestamp (POSIX time) to the session
-    addToSession :: [Scrobble] -> String -> String -> String -> Integer -> Integer -> [Scrobble]
-    addToSession session artist album title duration timestamp = let newTrack = TrackInfo {artist = artist, album = album, title = title, duration = duration}
-                                                                     scrobble = Scrobble {timestamp = timestamp, trackInfo = newTrack}
-                                                                 in session ++ [scrobble]
-
     -- write the session to a JSON file
     -- if the program is configured to keep previous sessions, it will be written in a new file, otherwise the same file will be overwritten
     writeSession :: [Scrobble] -> Bool -> String -> IO ()
@@ -66,6 +60,8 @@ module JsonOperations
             top_artists_time = Data.Map.empty,
             top_albums_time = Data.Map.empty,
             top_tracks = Data.Map.empty,
+            overall_players = Data.Map.empty,
+            overall_players_time = Data.Map.empty,
             total_artists = 0,
             total_tracks = 0,
             last_week = StatSection {
@@ -78,7 +74,9 @@ module JsonOperations
                 artists_time = Data.Map.empty,
                 artists_plays = Data.Map.empty,
                 listening_hours = Data.Map.fromList [(0,0), (1,0), (2,0), (3,0), (4,0), (5,0), (6,0), (7,0), (8,0), (9,0), (10,0), (11,0), (12,0), (13,0), (14,0), (15,0), (16,0), (17,0), (18,0), (19,0), (20,0), (21,0), (22,0), (23,0)],
-                listening_days = Data.Map.fromList [("Sunday", 0), ("Monday", 0), ("Tuesday", 0), ("Wednesday", 0), ("Thursday", 0), ("Friday", 0), ("Saturday", 0)]
+                listening_days = Data.Map.fromList [("Sunday", 0), ("Monday", 0), ("Tuesday", 0), ("Wednesday", 0), ("Thursday", 0), ("Friday", 0), ("Saturday", 0)],
+                players = Data.Map.empty,
+                players_time = Data.Map.empty
             },
             last_month = StatSection {
                 different_albums = 0,
@@ -90,7 +88,9 @@ module JsonOperations
                 artists_time = Data.Map.empty,
                 artists_plays = Data.Map.empty,
                 listening_hours = Data.Map.fromList [(0,0), (1,0), (2,0), (3,0), (4,0), (5,0), (6,0), (7,0), (8,0), (9,0), (10,0), (11,0), (12,0), (13,0), (14,0), (15,0), (16,0), (17,0), (18,0), (19,0), (20,0), (21,0), (22,0), (23,0)],
-                listening_days = Data.Map.fromList [("Sunday", 0), ("Monday", 0), ("Tuesday", 0), ("Wednesday", 0), ("Thursday", 0), ("Friday", 0), ("Saturday", 0)]
+                listening_days = Data.Map.fromList [("Sunday", 0), ("Monday", 0), ("Tuesday", 0), ("Wednesday", 0), ("Thursday", 0), ("Friday", 0), ("Saturday", 0)],
+                players = Data.Map.empty,
+                players_time = Data.Map.empty
             },
             last_year = StatSection {
                 different_albums = 0,
@@ -102,7 +102,9 @@ module JsonOperations
                 artists_time = Data.Map.empty,
                 artists_plays = Data.Map.empty,
                 listening_hours = Data.Map.fromList [(0,0), (1,0), (2,0), (3,0), (4,0), (5,0), (6,0), (7,0), (8,0), (9,0), (10,0), (11,0), (12,0), (13,0), (14,0), (15,0), (16,0), (17,0), (18,0), (19,0), (20,0), (21,0), (22,0), (23,0)],
-                listening_days = Data.Map.fromList [("Sunday", 0), ("Monday", 0), ("Tuesday", 0), ("Wednesday", 0), ("Thursday", 0), ("Friday", 0), ("Saturday", 0)]
+                listening_days = Data.Map.fromList [("Sunday", 0), ("Monday", 0), ("Tuesday", 0), ("Wednesday", 0), ("Thursday", 0), ("Friday", 0), ("Saturday", 0)],
+                players = Data.Map.empty,
+                players_time = Data.Map.empty
             }
         }
         BS.writeFile (cfg.homePath ++ "stats.json") (encodePretty emptyStats)

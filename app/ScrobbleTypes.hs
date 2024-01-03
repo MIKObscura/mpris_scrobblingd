@@ -29,6 +29,7 @@ where
 
     data Scrobble = Scrobble {
         timestamp :: Integer,
+        player :: String,
         trackInfo :: TrackInfo
     } deriving (Show, Eq)
 
@@ -56,7 +57,9 @@ where
         artists_time :: Map String Integer,
         artists_plays :: Map String Int,
         listening_hours :: Map Int Int,
-        listening_days :: Map String Int
+        listening_days :: Map String Int,
+        players :: Map String Int,
+        players_time :: Map String Integer
     } deriving (Show)
 
     data Stats = Stats {
@@ -74,7 +77,9 @@ where
         total_listening_days :: Map String Int,
         last_week :: StatSection,
         last_month :: StatSection,
-        last_year :: StatSection
+        last_year :: StatSection,
+        overall_players :: Map String Int,
+        overall_players_time :: Map String Integer
     } deriving (Show)
 
     -- SQL types

@@ -55,6 +55,12 @@ where
     getHODPlaytime :: [Scrobble] -> Int -> Integer
     getHODPlaytime scrobbles dayTime = sum [duration (trackInfo x) | x <- scrobbles, getHourOfDay (timestamp x) == dayTime]
 
+    getPlayersPlays :: [Scrobble] -> String -> Int
+    getPlayersPlays scrobbles playerName = length [x | x <- scrobbles, player x == playerName]
+
+    getPlayersPlaytime :: [Scrobble] -> String -> Integer
+    getPlayersPlaytime scrobbles playerName = sum [duration (trackInfo x) | x <- scrobbles, player x == playerName]
+
     updateKey :: (Ord k, Num v) => k -> v -> Map k v -> Map k v
     updateKey k v inputMap = if member k inputMap then adjust (+ v) k inputMap
                         else insert k v inputMap
@@ -106,6 +112,26 @@ where
                                     else
                                         updateDays session updatedDays (i + 1)
 
+    updatePlayers :: [Scrobble] -> Map String Int -> Int -> Map String Int
+    updatePlayers session stats i = let item = session !! i
+                                        playerName = player item
+                                        updatedPlayers = updateKey playerName 1 stats
+                                    in
+                                        if item == last session then
+                                            updatedPlayers
+                                        else
+                                            updatePlayers session updatedPlayers (i + 1)
+
+    updatePlayersTime :: [Scrobble] -> Map String Integer -> Int -> Map String Integer
+    updatePlayersTime session stats i = let item = session !! i
+                                            playerName = player item
+                                            updatedPlayers = updateKey playerName (duration item.trackInfo) stats
+                                        in
+                                            if item == last session then
+                                                updatedPlayers
+                                            else
+                                                updatePlayersTime session updatedPlayers (i + 1)
+
     updateOverallStats :: [Scrobble] -> Configuration -> Stats -> IO ()
     updateOverallStats session cfg stats = do
                                                 conn <- open (cfg.homePath ++ "scrobble.db")
@@ -127,11 +153,13 @@ where
                                                                        total_albums = overallStats.diff_albums,
                                                                        total_tracks = overallStats.diff_tracks,
                                                                        total_listening_days = updateDays session stats.total_listening_days 0,
-                                                                       total_listening_hours = updateHours session stats.total_listening_hours 0}
+                                                                       total_listening_hours = updateHours session stats.total_listening_hours 0,
+                                                                       overall_players = updatePlayers session stats.overall_players 0,
+                                                                       overall_players_time = updatePlayersTime session stats.overall_players_time 0}
                                                 writeStats cfg newStats
 
-    updatePeriodStats :: [Scrobble] -> Configuration -> IO ()
-    updatePeriodStats session cfg = do
+    updatePeriodStats :: Configuration -> IO ()
+    updatePeriodStats cfg = do
         Control.Monad.when (weeklyStats cfg) $ do
             stats <- getStats cfg
             weekData <- getPeriodData "week" cfg
@@ -148,7 +176,9 @@ where
                                             different_tracks = length (getTracks weekData),
                                             different_artists = length (getArtists weekData),
                                             different_albums = length (getAlbums weekData),
-                                            total_time = getTotalPlaytime weekData}
+                                            total_time = getTotalPlaytime weekData,
+                                            players = updatePlayers weekData Data.Map.empty 0,
+                                            players_time = updatePlayersTime weekData Data.Map.empty 0}
             let newStats = stats { last_week = newWeekStats}
             writeStats cfg newStats
         Control.Monad.when (monthlyStats cfg) $ do
@@ -167,7 +197,9 @@ where
                                             different_tracks = length (getTracks monthData),
                                             different_artists = length (getArtists monthData),
                                             different_albums = length (getAlbums monthData),
-                                            total_time = getTotalPlaytime monthData}
+                                            total_time = getTotalPlaytime monthData,
+                                            players = updatePlayers monthData Data.Map.empty 0,
+                                            players_time = updatePlayersTime monthData Data.Map.empty 0}
             let newStats = stats { last_month = newMonthStats}
             writeStats cfg newStats
         Control.Monad.when (yearlyStats cfg) $ do
@@ -186,7 +218,9 @@ where
                                             different_tracks = length (getTracks yearData),
                                             different_artists = length (getArtists yearData),
                                             different_albums = length (getAlbums yearData),
-                                            total_time = getTotalPlaytime yearData}
+                                            total_time = getTotalPlaytime yearData,
+                                            players = updatePlayers yearData Data.Map.empty 0,
+                                            players_time = updatePlayersTime yearData Data.Map.empty 0}
             let newStats = stats {last_year = newYearStats}
             writeStats cfg newStats
             return ()

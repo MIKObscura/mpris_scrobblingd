@@ -60,9 +60,10 @@ module MPRIS
                         in fromJust justValue
 
     -- convert metadata Map into a Scrobble
-    convertMetadata :: Map String Variant -> Integer -> Scrobble
-    convertMetadata metadata posixTime = Scrobble {
+    convertMetadata :: Map String Variant -> Integer -> BusName -> Scrobble
+    convertMetadata metadata posixTime currentBus = Scrobble {
         timestamp = posixTime,
+        player = formatBusName currentBus,
         trackInfo = TrackInfo {
             artist = intercalate " & " (fromJust (fromVariant (fromJust (Data.Map.lookup "xesam:artist" metadata) :: Variant) :: Maybe [String]) :: [String]),
             album = fromJust (fromVariant (fromJust (Data.Map.lookup "xesam:album" metadata) :: Variant) :: Maybe String) :: String,
@@ -85,7 +86,7 @@ module MPRIS
             thisThread <- myThreadId
             atomically $ writeTVar thread thisThread
             let metadata = fromVariant (fromJust metadataLookup) :: Maybe (Map String Variant)
-            let scrobble = convertMetadata (fromJust metadata) currentTime
+            let scrobble = convertMetadata (fromJust metadata) currentTime currentBus
             print scrobble
             let waitTime = getWaitingTime cfg.timeToRegister (fromInteger scrobble.trackInfo.duration)
             threadDelay waitTime

@@ -8,3 +8,4 @@
 * Made the player switching part work
 * creating the JSON files isn't necessary anymore
 * fixed stats not updating properly
+* added music players used to stats

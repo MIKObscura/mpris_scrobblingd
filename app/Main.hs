@@ -58,7 +58,7 @@ main = do
                 newThreadId <- myThreadId
                 atomically $ writeTVar waitingThreadId newThreadId
                 currentTime <- getCurrentPOSIXTime
-                let scrobble = convertMetadata currentMetadata currentTime
+                let scrobble = convertMetadata currentMetadata currentTime (busName_ currentBus)
                 print scrobble
                 let waitTime = getWaitingTime cfg.timeToRegister (fromInteger scrobble.trackInfo.duration)
                 threadDelay waitTime
@@ -81,7 +81,7 @@ main = do
                 writePeriodData session cfg
                 stats <- getStats cfg
                 updateOverallStats session cfg stats
-                updatePeriodStats session cfg
+                updatePeriodStats cfg
                 atomically $ writeTVar currentSession []
             busNamesList <- getNamesList client
             let foundActiveBus = getBusName cfg.bus busNamesList
