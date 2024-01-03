@@ -81,8 +81,7 @@ main = do
                 writePeriodData session cfg
                 stats <- getStats cfg
                 updateOverallStats session cfg stats
-                updatedStats <- getStats cfg
-                updatePeriodStats session cfg updatedStats
+                updatePeriodStats session cfg
                 atomically $ writeTVar currentSession []
             busNamesList <- getNamesList client
             let foundActiveBus = getBusName cfg.bus busNamesList

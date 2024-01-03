@@ -130,62 +130,64 @@ where
                                                                        total_listening_hours = updateHours session stats.total_listening_hours 0}
                                                 writeStats cfg newStats
 
-    updatePeriodStats :: [Scrobble] -> Configuration -> Stats -> IO ()
-    updatePeriodStats session cfg stats = do
-        let artistsListSession = getArtists session
-        let albumsListSession = getAlbums session
+    updatePeriodStats :: [Scrobble] -> Configuration -> IO ()
+    updatePeriodStats session cfg = do
         Control.Monad.when (weeklyStats cfg) $ do
+            stats <- getStats cfg
             weekData <- getPeriodData "week" cfg
-            let artistsUpdate = updateArtists session stats.last_week artistsListSession 0
-            let albumsUpdate = updateAlbums session stats.last_week albumsListSession 0
+            let artistsList = getArtists weekData
+            let albumsList = getAlbums weekData
+            let artistsUpdate = updateArtists weekData (stats.last_week {artists_plays = Data.Map.empty, artists_time = Data.Map.empty}) artistsList 0
+            let albumsUpdate = updateAlbums weekData (stats.last_week {albums_plays = Data.Map.empty, albums_time = Data.Map.empty}) albumsList 0
             let newWeekStats = stats.last_week { artists_plays = fst artistsUpdate,
                                             artists_time = snd artistsUpdate,
                                             albums_plays = fst albumsUpdate,
                                             albums_time = snd albumsUpdate,
-                                            listening_hours = updateHours session stats.last_week.listening_hours 0,
-                                            listening_days = updateDays session stats.last_week.listening_days 0,
+                                            listening_hours = updateHours weekData Data.Map.empty 0,
+                                            listening_days = updateDays weekData Data.Map.empty 0,
                                             different_tracks = length (getTracks weekData),
                                             different_artists = length (getArtists weekData),
                                             different_albums = length (getAlbums weekData),
                                             total_time = getTotalPlaytime weekData}
             let newStats = stats { last_week = newWeekStats}
             writeStats cfg newStats
-            newStatsFile <- getStats cfg
-            Control.Monad.when (monthlyStats cfg || yearlyStats cfg) $ updatePeriodStats session (cfg { weeklyStats = False }) newStatsFile
         Control.Monad.when (monthlyStats cfg) $ do
+            stats <- getStats cfg
             monthData <- getPeriodData "month" cfg
-            let artistsUpdate = updateArtists session stats.last_month artistsListSession 0
-            let albumsUpdate = updateAlbums session stats.last_month albumsListSession 0
+            let artistsList = getArtists monthData
+            let albumsList = getAlbums monthData
+            let artistsUpdate = updateArtists monthData (stats.last_month {artists_plays = Data.Map.empty, artists_time = Data.Map.empty}) artistsList 0
+            let albumsUpdate = updateAlbums monthData (stats.last_month {albums_plays = Data.Map.empty, albums_time = Data.Map.empty}) albumsList 0
             let newMonthStats = stats.last_month { artists_plays = fst artistsUpdate,
                                             artists_time = snd artistsUpdate,
                                             albums_plays = fst albumsUpdate,
                                             albums_time = snd albumsUpdate,
-                                            listening_hours = updateHours session stats.last_month.listening_hours 0,
-                                            listening_days = updateDays session stats.last_month.listening_days 0,
+                                            listening_hours = updateHours monthData Data.Map.empty 0,
+                                            listening_days = updateDays monthData Data.Map.empty 0,
                                             different_tracks = length (getTracks monthData),
                                             different_artists = length (getArtists monthData),
                                             different_albums = length (getAlbums monthData),
                                             total_time = getTotalPlaytime monthData}
             let newStats = stats { last_month = newMonthStats}
             writeStats cfg newStats
-            newStatsFile <- getStats cfg
-            Control.Monad.when (yearlyStats cfg) $ updatePeriodStats session (cfg { monthlyStats = False}) newStats
         Control.Monad.when (yearlyStats cfg) $ do
+            stats <- getStats cfg
             yearData <- getPeriodData "year" cfg
-            let artistsUpdate = updateArtists session stats.last_year artistsListSession 0
-            let albumsUpdate = updateAlbums session stats.last_year albumsListSession 0
+            let artistsList = getArtists yearData
+            let albumsList = getAlbums yearData
+            let artistsUpdate = updateArtists yearData (stats.last_year {artists_plays = Data.Map.empty, artists_time = Data.Map.empty}) artistsList 0
+            let albumsUpdate = updateAlbums yearData (stats.last_year {albums_plays = Data.Map.empty, albums_time = Data.Map.empty}) albumsList 0
             let newYearStats = stats.last_year { artists_plays = fst artistsUpdate,
                                             artists_time = snd artistsUpdate,
                                             albums_plays = fst albumsUpdate,
                                             albums_time = snd albumsUpdate,
-                                            listening_hours = updateHours session stats.last_year.listening_hours 0,
-                                            listening_days = updateDays session stats.last_year.listening_days 0,
+                                            listening_hours = updateHours yearData Data.Map.empty 0,
+                                            listening_days = updateDays yearData Data.Map.empty 0,
                                             different_tracks = length (getTracks yearData),
                                             different_artists = length (getArtists yearData),
                                             different_albums = length (getAlbums yearData),
                                             total_time = getTotalPlaytime yearData}
             let newStats = stats {last_year = newYearStats}
             writeStats cfg newStats
-            newStatsFile <- getStats cfg
             return ()
 
