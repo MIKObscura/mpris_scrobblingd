@@ -24,10 +24,6 @@ where
         let splittedLines = [(head (splitOn "=" x), splitOn "=" x !! 1) | x <- lines]
         return Configuration {
             homePath = getVal "home_path" splittedLines,
-            weeklyStats = getVal "weekly_stats" splittedLines == "true",
-            monthlyStats = getVal "monthly_stats" splittedLines == "true",
-            yearlyStats = getVal "yearly_stats" splittedLines == "true",
-            keepPreviousSessions = getVal "keep_previous_sessions" splittedLines == "true",
             timeToRegister = read (getVal "time_to_register" splittedLines) :: Float,
             logLevel = getVal "log_level" splittedLines,
             scrobblingType = getVal "scrobbling_type" splittedLines,

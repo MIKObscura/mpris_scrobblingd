@@ -7,11 +7,6 @@ module Misc
     isLastMonth,
     isLastWeek,
     isLastYear,
-    artistsToPlaysMap,
-    artistsToPlaytimeMap,
-    albumsToPlaysMap,
-    albumsToPlaytimeMap,
-    tracksToMap,
     getHourOfDay,
     getDayOfWeek,
 )
@@ -45,54 +40,6 @@ where
     -- returns True if the date corresponding to the given POSIX time is within the last year (for simplicity sake, 'last year' means last 365 days)
     isLastYear :: Integer -> Integer -> Bool
     isLastYear timestamp currTime = timestamp >= (currTime - 31536000)
-
-    -- transform a list of Artist into a Map containing their names and number of plays
-    artistsToPlaysMap :: [Artist] -> Map String Int -> Int -> Map String Int
-    artistsToPlaysMap artistsList res i = let item = artistsList !! i
-                                    in
-                                        if item == last artistsList then
-                                            insert item.name item.totalPlays res
-                                        else
-                                            artistsToPlaysMap artistsList (insert item.name item.totalPlays res) (i+ 1)
-
-    -- transform a list of Artist into a Map containing their names and time played in seconds
-    artistsToPlaytimeMap :: [Artist] -> Map String Integer -> Int -> Map String Integer
-    artistsToPlaytimeMap artistsList res i = let item = artistsList !! i
-                                    in
-                                        if item == last artistsList then
-                                            insert item.name (toInteger item.totalPlaytime) res
-                                        else
-                                            artistsToPlaytimeMap artistsList (insert item.name (toInteger item.totalPlaytime) res) (i+ 1)
-
-    -- transform a list of Album into a Map containing their artist name and title and number of plays
-    albumsToPlaysMap :: [Album] -> Map String Int -> Int -> Map String Int
-    albumsToPlaysMap albumsList res i = let item = albumsList !! i
-                                            albumTitle = item.artist ++ " - " ++ item.title
-                                        in
-                                            if item == last albumsList then
-                                                insert albumTitle item.totalPlays res
-                                            else
-                                                albumsToPlaysMap albumsList (insert albumTitle item.totalPlays res) (i + 1)
-
-    -- transform a list of Album into a Map containing their artist name and title and time played in seconds
-    albumsToPlaytimeMap :: [Album] -> Map String Integer -> Int -> Map String Integer
-    albumsToPlaytimeMap albumsList res i = let item = albumsList !! i
-                                               albumTitle = item.artist ++ " - " ++ item.title
-                                        in
-                                            if item == last albumsList then
-                                                insert albumTitle (toInteger item.totalPlaytime) res
-                                            else
-                                                albumsToPlaytimeMap albumsList (insert albumTitle (toInteger item.totalPlaytime) res) (i + 1)
-
-    -- transform a list of Track into a Map containing their title and artist name and number of plays
-    tracksToMap :: [Track] -> Map String Int -> Int -> Map String Int
-    tracksToMap tracksList res i = let item = tracksList !! i
-                                       trackTitle = item.artist ++ " - " ++ item.title
-                                    in
-                                        if item == last tracksList then
-                                            insert trackTitle item.plays res
-                                        else
-                                            tracksToMap tracksList (insert trackTitle item.plays res) (i + 1)
 
     -- returns the day of the week of a given POSIX time
     getDayOfWeek :: Integer -> String

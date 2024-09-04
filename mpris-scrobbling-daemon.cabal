@@ -25,12 +25,12 @@ executable mpris-scrobbling-daemon
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules: Config, DBQueries, JsonOperations, Stats, ScrobbleTypes, MPRIS, Misc
+    other-modules: Config, DBQueries, ScrobbleTypes, MPRIS, Misc
     ghc-options: -threaded
 
     -- LANGUAGE extensions used by modules in this package.
     extensions: OverloadedStrings, TemplateHaskell, OverloadedRecordDot, DuplicateRecordFields
     -- other-extensions:
-    build-depends:    base, dbus, sqlite-simple, aeson, split, time, bytestring, aeson-pretty, containers, stm, strict, directory
+    build-depends:    base, dbus, sqlite-simple, split, time, bytestring, containers, stm, strict, directory
     hs-source-dirs:   app
     default-language: Haskell2010

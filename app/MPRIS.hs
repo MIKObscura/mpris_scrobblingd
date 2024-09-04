@@ -21,6 +21,8 @@ module MPRIS
     import Misc
     import Control.Concurrent (threadDelay, ThreadId, killThread, myThreadId)
     import Control.Concurrent.STM
+    import DBQueries
+    import Database.SQLite.Simple (open, close)
     import qualified Control.Monad
 
     -- returns True if any of the elements of the second list are in the first, False if not
@@ -73,8 +75,8 @@ module MPRIS
     }
 
     -- callback hooked to PropertiesChanged signal
-    propsCallback :: Signal -> Configuration -> BusName -> TVar [Scrobble] -> TVar ThreadId -> ThreadId -> IO ()
-    propsCallback sig cfg currentBus currentSession thread mainThreadId = do
+    propsCallback :: Signal -> Configuration -> BusName -> TVar ThreadId -> ThreadId -> IO ()
+    propsCallback sig cfg currentBus thread mainThreadId = do
         currentTime <- getCurrentPOSIXTime
         let changedProps = fromJust (fromVariant (sig.signalBody !! 1) :: Maybe (Map String Variant))
         let metadataLookup = Data.Map.lookup "Metadata" changedProps
@@ -94,9 +96,10 @@ module MPRIS
             query <- queryBusProps tempClient currentBus
             let currentMetadata = getMetadata query
             Control.Monad.when (currentMetadata == fromJust metadata) $ do
-                session <- readTVarIO currentSession
-                atomically $ modifyTVar currentSession (++ [scrobble])
-                print (session ++ [scrobble])
+                conn <- open (cfg.homePath ++ "scrobble.db")
+                registerScrobble conn scrobble
+                close conn
+                print scrobble
                 disconnect tempClient
                 return ()
 

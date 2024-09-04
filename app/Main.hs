@@ -12,13 +12,12 @@ import Control.Monad (forever, when, unless)
 import Control.Concurrent
 import Control.Concurrent.STM
 import Data.Map(null, Map)
-import JsonOperations
-import Stats
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString as B
 import Data.Maybe (isNothing)
-import Data.Aeson (decodeStrict)
 import System.Directory ( doesFileExist )
+import DBQueries
+import Database.SQLite.Simple (open, close)
 
 main :: IO ()
 main = do
@@ -27,19 +26,10 @@ main = do
     cfg <- readConfig cfgPath
     print cfg
     -- check if all these files exist and create them if not
-    checkStats <- doesFileExist (cfg.homePath ++ "stats.json")
-    checkWeek <- doesFileExist (cfg.homePath ++ "scrobble_weekly_data.json")
-    checkMonth <- doesFileExist (cfg.homePath ++ "scrobble_monthly_data.json")
-    checkYear <- doesFileExist (cfg.homePath ++ "scrobble_yearly_data.json")
-    unless checkStats $ createEmptyStatsFile cfg
-    unless checkWeek $ createEmptyPeriodFile cfg "week"
-    unless checkMonth $ createEmptyPeriodFile cfg "month"
-    unless checkYear $ createEmptyPeriodFile cfg "year"
     client <- connectSession
     activeBusList <- getNamesList client
     mainThreadId <- myThreadId
     waitingThreadId <- newTVarIO mainThreadId
-    currentSession <- newTVarIO [] :: IO (TVar [Scrobble])
     let matchProps = matchAny { matchInterface = Just "org.freedesktop.DBus.Properties", matchPath = Just "/org/mpris/MediaPlayer2", matchMember = Just "PropertiesChanged", matchSender = Just (busName_ "org.Freedesktop.DBus") }
     dummyHandler <- addMatch client matchProps (\sig -> return ())
     sigHandlerVar <- newTVarIO dummyHandler
@@ -62,11 +52,13 @@ main = do
                 print scrobble
                 let waitTime = getWaitingTime cfg.timeToRegister (fromInteger scrobble.trackInfo.duration)
                 threadDelay waitTime
-                atomically $ modifyTVar currentSession (++[scrobble])
+                conn <- open (cfg.homePath ++ "scrobble.db")
+                registerScrobble conn scrobble
+                close conn
                 return ()
             return ()
         let matchProps = matchAny { matchInterface = Just "org.freedesktop.DBus.Properties", matchPath = Just "/org/mpris/MediaPlayer2", matchMember = Just "PropertiesChanged", matchSender = Just (busName_ currentBusUname) }
-        sigHandler <- addMatch client matchProps (\sig -> propsCallback sig cfg (busName_ currentBus) currentSession waitingThreadId mainThreadId)
+        sigHandler <- addMatch client matchProps (\sig -> propsCallback sig cfg (busName_ currentBus) waitingThreadId mainThreadId)
         removeMatch client dummyHandler
         atomically $ writeTVar sigHandlerVar sigHandler
     -- check every 5 seconds if the current bus is active, do nothing if so, try to hook to another one if not
@@ -74,15 +66,6 @@ main = do
         currentBus <- readTVarIO currentBusVar
         isCurrentBusActive <- isAnyBusActive [currentBus]
         if not isCurrentBusActive then do
-            session <- readTVarIO currentSession
-            -- register the session if not empty and empty it when done
-            unless (Prelude.null session) $ do
-                writeSession session cfg.keepPreviousSessions cfg.homePath
-                writePeriodData session cfg
-                stats <- getStats cfg
-                updateOverallStats session cfg stats
-                updatePeriodStats cfg
-                atomically $ writeTVar currentSession []
             busNamesList <- getNamesList client
             let foundActiveBus = getBusName cfg.bus busNamesList
             print foundActiveBus
@@ -94,7 +77,7 @@ main = do
                 prevHandler <- readTVarIO sigHandlerVar
                 removeMatch client prevHandler
                 let newMatch = matchAny { matchInterface = Just "org.freedesktop.DBus.Properties", matchPath = Just "/org/mpris/MediaPlayer2", matchMember = Just "PropertiesChanged", matchSender = Just (busName_ newBusUname) }
-                newHandler <- addMatch client newMatch (\sig -> propsCallback sig cfg (busName_ foundActiveBus) currentSession waitingThreadId mainThreadId)
+                newHandler <- addMatch client newMatch (\sig -> propsCallback sig cfg (busName_ foundActiveBus) waitingThreadId mainThreadId)
                 atomically $ writeTVar sigHandlerVar newHandler
             threadDelay 5000000
         else do
